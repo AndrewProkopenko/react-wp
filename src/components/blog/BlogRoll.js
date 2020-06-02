@@ -1,0 +1,87 @@
+import React, { PureComponent } from 'react'
+import axios from 'axios'
+import BlogRollItem from './BlogRollItem'
+import Pagination from './Pagination'
+
+class BlogRoll extends PureComponent {
+    constructor(props) {
+        super(props)
+
+        this.state = {
+            posts: [], 
+            page: this.props.page,
+            total: 0 
+        }
+       
+    }
+
+    componentDidUpdate(prevProps, prevState) { 
+        if(prevProps.page !== this.props.page ) {  
+            this.setState( { 
+                page:  this.props.page
+            })
+            this.fetchPosts()
+        }
+        if(prevProps.searchQuery !== this.props.searchQuery ) {  
+           this.fetchPosts()
+        }
+    }
+
+    componentDidMount() { 
+        this.fetchPosts() 
+    }
+    scrollTop() {  
+        window.scrollTo({ 
+            top : 0, 
+            behavior: 'smooth'
+       })
+    }
+    fetchPosts()  { 
+        this.setState( { 
+            posts: []
+        }) 
+        axios.get(`${process.env.REACT_APP_API_BASE}/posts?_embed&page=${this.props.page}&search=${this.props.searchQuery}`)
+        .then( response => { 
+            
+            this.setState( { 
+                posts: response.data,
+                total: response.headers['x-wp-total'],
+                lastPage: response.headers['x-wp-totalpages']
+            })
+
+          
+        })
+        .catch( err => {
+            console.error(err)
+        })
+        
+        setTimeout(  this.scrollTop, 100)
+    }
+
+    render() {
+        return (
+            <>
+            <div className="col-xl-8 py-5 px-md-5 row-main">
+                <div className="row pt-md-4 flex-grow-1">
+                    <div className="col-md-12">
+                        {   this.state.posts.length > 0 &&
+                            this.state.posts.map( (item, index) => { 
+                                return ( 
+                                    <BlogRollItem key={index} post={item} />
+                                )
+                            })
+                        }
+                    </div>
+                </div>
+                {
+                    this.state.lastPage> 1 && 
+                    <Pagination current={this.state.page} last={this.state.lastPage} slug='/'   />
+                }
+               
+            </div>
+            </>
+        )
+    }
+}
+
+export default BlogRoll
